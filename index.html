@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Dashboard Minimalist</title>
+    <!-- Font modern dan bersih -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <div class="header-titles">
+                <h1>Monitor Sensor</h1>
+                <p>Data Suhu & Kelembapan Real-time</p>
+            </div>
+            <div class="header-controls">
+                <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                <div class="connection-badge connected" id="connection-status">
+                    <span class="conn-dot"></span>
+                    <span id="conn-text">Terhubung</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Kategori / Status Keseluruhan -->
+        <div class="status-section main-status">
+            <div class="status-badge large-badge" id="status-badge">
+                <div class="status-dot large-dot"></div>
+                <span id="status-text">Memuat</span>
+            </div>
+            <p class="status-description" id="status-description">Menunggu data dari sensor...</p>
+        </div>
+
+        <div class="cards-container">
+            <div class="card temp-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path></svg>
+                    </div>
+                    <h2>Suhu Udara</h2>
+                </div>
+                <div class="value" id="temperature-value">-- °C</div>
+                <div class="card-footer">Sensor DHT22</div>
+            </div>
+
+            <div class="card hum-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a5 5 0 0 0 5-5c0-2-2.5-6-5-10-2.5 4-5 8-5 10a5 5 0 0 0 5 5z"></path></svg>
+                    </div>
+                    <h2>Kelembapan</h2>
+                </div>
+                <div class="value" id="humidity-value">-- %</div>
+                <div class="card-footer">Sensor DHT22</div>
+            </div>
+        </div>
+
+        <div class="charts-wrapper">
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h2>Grafik Suhu</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h2>Grafik Kelembapan</h2>
+                </div>
+                <div class="chart-container">
+                    <canvas id="humChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>
