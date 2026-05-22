@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sensor Dashboard Minimalist</title>
-    <!-- Font modern dan bersih -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- MQTT.js via CDN -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
     <div class="dashboard">
@@ -21,20 +22,20 @@
                     <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
                     <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
                 </button>
-                <div class="connection-badge connected" id="connection-status">
+                <div class="connection-badge disconnected" id="connection-status">
                     <span class="conn-dot"></span>
-                    <span id="conn-text">Terhubung</span>
+                    <span id="conn-text">Menghubungkan...</span>
                 </div>
             </div>
         </header>
 
-        <!-- Kategori / Status Keseluruhan -->
+        <!-- Status Keseluruhan -->
         <div class="status-section main-status">
-            <div class="status-badge large-badge" id="status-badge">
+            <div class="status-badge large-badge offline" id="status-badge">
                 <div class="status-dot large-dot"></div>
-                <span id="status-text">Memuat</span>
+                <span id="status-text">Menunggu</span>
             </div>
-            <p class="status-description" id="status-description">Menunggu data dari sensor...</p>
+            <p class="status-description" id="status-description">Menunggu data dari sensor MQTT...</p>
         </div>
 
         <div class="cards-container">
@@ -46,7 +47,7 @@
                     <h2>Suhu Udara</h2>
                 </div>
                 <div class="value" id="temperature-value">-- °C</div>
-                <div class="card-footer">Sensor DHT22</div>
+                <div class="card-footer">Sensor DHT22 · via MQTT</div>
             </div>
 
             <div class="card hum-card">
@@ -57,8 +58,20 @@
                     <h2>Kelembapan</h2>
                 </div>
                 <div class="value" id="humidity-value">-- %</div>
-                <div class="card-footer">Sensor DHT22</div>
+                <div class="card-footer">Sensor DHT22 · via MQTT</div>
             </div>
+        </div>
+
+        <!-- Info Topic MQTT -->
+        <div class="mqtt-info" id="mqtt-info">
+            <span class="mqtt-label">Topic:</span>
+            <span id="mqtt-topic-display">sensor/dht22</span>
+            <span class="mqtt-sep">·</span>
+            <span class="mqtt-label">Broker:</span>
+            <span>HiveMQ Cloud</span>
+            <span class="mqtt-sep">·</span>
+            <span class="mqtt-label">Update terakhir:</span>
+            <span id="last-update">-</span>
         </div>
 
         <div class="charts-wrapper">

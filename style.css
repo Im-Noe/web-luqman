@@ -72,24 +72,38 @@ body {
 [data-theme="dark"] .sun-icon { display: none; }
 
 /* Connection Status Badge */
-.connection-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border-color); }
+.connection-badge {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.35rem 0.85rem; border-radius: 9999px;
+    font-size: 0.75rem; font-weight: 600; border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
 .connection-badge.connected { background-color: var(--status-aman-bg); color: var(--status-aman); border-color: var(--status-aman-bg); }
-.connection-badge.connected .conn-dot { background-color: var(--status-aman); }
+.connection-badge.connected .conn-dot { background-color: var(--status-aman); animation: pulse-dot 2s infinite; }
 .connection-badge.disconnected { background-color: var(--status-beresiko-bg); color: var(--status-beresiko); border-color: var(--status-beresiko-bg); }
 .connection-badge.disconnected .conn-dot { background-color: var(--status-beresiko); }
 .conn-dot { width: 6px; height: 6px; border-radius: 50%; box-shadow: 0 0 0 2px currentColor; }
 
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
 /* Offline State */
-body.offline .card, body.offline .charts-wrapper, body.offline .status-section { opacity: 0.5; filter: grayscale(100%); pointer-events: none; transition: all 0.3s ease; }
+body.offline .card,
+body.offline .charts-wrapper,
+body.offline .status-section {
+    opacity: 0.5; filter: grayscale(100%); pointer-events: none; transition: all 0.3s ease;
+}
 
 /* Status Section */
 .status-section {
     background: var(--bg-card); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem;
-    border: 1px solid var(--border-color); box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05); text-align: center;
-    transition: all 0.3s ease;
+    border: 1px solid var(--border-color); box-shadow: 0 2px 4px -1px rgba(0,0,0,0.05);
+    text-align: center; transition: all 0.3s ease;
 }
 
-.status-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; }
+.status-badge { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.85rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; transition: all 0.3s ease; }
 .status-badge.large-badge { padding: 0.5rem 1.25rem; font-size: 1.25rem; gap: 0.5rem; margin-bottom: 0.5rem; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; }
 .status-dot.large-dot { width: 12px; height: 12px; }
@@ -106,15 +120,26 @@ body.offline .card, body.offline .charts-wrapper, body.offline .status-section {
 .status-badge.offline .status-dot { background-color: #94a3b8; box-shadow: none; }
 
 /* Cards */
-.cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.cards-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 1.25rem; }
 .card { background: var(--bg-card); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--border-color); box-shadow: 0 1px 3px rgba(0,0,0,0.05); transition: all 0.3s ease; }
 .card-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
 .card-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; }
 .temp-card .card-icon { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 .hum-card .card-icon { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
 .card h2 { font-size: 0.95rem; color: var(--text-muted); font-weight: 500; }
-.card .value { font-size: 2.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem; }
+.card .value { font-size: 2.25rem; font-weight: 700; color: var(--text-main); margin-bottom: 0.25rem; transition: all 0.3s ease; }
 .card-footer { font-size: 0.75rem; color: var(--text-muted); }
+
+/* MQTT Info Bar */
+.mqtt-info {
+    display: flex; flex-wrap: wrap; gap: 0.4rem 0.75rem; align-items: center;
+    font-size: 0.75rem; color: var(--text-muted);
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 10px; padding: 0.6rem 1rem; margin-bottom: 1.5rem;
+    transition: all 0.3s ease;
+}
+.mqtt-label { font-weight: 600; color: var(--text-main); }
+.mqtt-sep { color: var(--border-color); }
 
 /* Charts */
 .charts-wrapper { display: flex; flex-direction: column; gap: 1.5rem; }
@@ -128,4 +153,5 @@ body.offline .card, body.offline .charts-wrapper, body.offline .status-section {
     .header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     .header-controls { width: 100%; justify-content: space-between; }
     .status-badge.large-badge { font-size: 1.5rem; }
+    .mqtt-info { font-size: 0.7rem; }
 }
