@@ -10,21 +10,35 @@ const MQTT_CONFIG = {
         connectTimeout: 10000,
         keepalive: 60,
     },
-    // Sesuaikan topic ini dengan topic yang dipublish ESP32/Arduino kamu
-    // Format payload yang didukung:
-    //   JSON: {"temperature": 25.3, "humidity": 65.1}
-    //   Atau dua topic terpisah: sensor/temperature dan sensor/humidity
     topics: {
-        combined: 'sensor/dht22',       // payload JSON gabungan
-        temperature: 'sensor/temperature', // payload angka murni
-        humidity: 'sensor/humidity',       // payload angka murni
+        raw:    'Dev01/environment/raw',     // {"suhu":25.3,"kelembapan":65,"status":"AMAN"}
+        status: 'Dev01/environment/status',  // {"status":"AMAN"}
     }
 };
 
-// ─── Threshold ──────────────────────────────────────────────────────────────
-const THRESHOLDS = {
-    temp: { minAman: 20, maxAman: 30, minSedang: 15, maxSedang: 35 },
-    hum:  { minAman: 40, maxAman: 60, minSedang: 30, maxSedang: 70 }
+// ─── Mapping status ESP32 → CSS class & teks UI ────────────────────────────
+// ESP32 mengirim: "AMAN" | "WASPADA" | "BERISIKO"
+const STATUS_MAP = {
+    'AMAN': {
+        cssClass: 'aman',
+        text:     'Aman',
+        desc:     'Kondisi suhu dan kelembapan saat ini berada dalam rentang ideal.'
+    },
+    'WASPADA': {
+        cssClass: 'sedang',
+        text:     'Waspada',
+        desc:     'Kondisi lingkungan kurang optimal. Silakan periksa sirkulasi udara.'
+    },
+    'BERISIKO': {
+        cssClass: 'beresiko',
+        text:     'Berisiko',
+        desc:     'Peringatan! Suhu atau kelembapan di luar batas aman.'
+    },
+    'MEMBACA': {
+        cssClass: 'offline',
+        text:     'Membaca…',
+        desc:     'Sensor sedang mengumpulkan data awal.'
+    }
 };
 
 // ─── DOM Elements ───────────────────────────────────────────────────────────
@@ -43,10 +57,6 @@ const mqttTopicDisplay  = document.getElementById('mqtt-topic-display');
 let tempChart, humChart;
 const maxDataPoints = 20;
 const chartData = { labels: [], temperature: [], humidity: [] };
-
-// State sensor sementara (untuk handle topic terpisah)
-let pendingTemp = null;
-let pendingHum  = null;
 
 // ─── Chart Colors ────────────────────────────────────────────────────────────
 const getChartColors = () => {
@@ -85,7 +95,8 @@ function initCharts() {
             ...commonOptions,
             scales: {
                 x: { grid: { display: false }, ticks: { color: colors.textColor, maxTicksLimit: 8 } },
-                y: { suggestedMin: 15, suggestedMax: 35, grid: { color: colors.gridColor }, ticks: { color: colors.textColor } }
+                // Rentang suhu disesuaikan dengan kalibrasi ESP32 (suhu kamar tropis)
+                y: { suggestedMin: 20, suggestedMax: 40, grid: { color: colors.gridColor }, ticks: { color: colors.textColor } }
             }
         }
     });
@@ -104,7 +115,8 @@ function initCharts() {
             ...commonOptions,
             scales: {
                 x: { grid: { display: false }, ticks: { color: colors.textColor, maxTicksLimit: 8 } },
-                y: { suggestedMin: 30, suggestedMax: 80, grid: { color: colors.gridColor }, ticks: { color: colors.textColor } }
+                // Rentang kelembapan sesuai kondisi tropis + kalibrasi ESP32
+                y: { suggestedMin: 40, suggestedMax: 100, grid: { color: colors.gridColor }, ticks: { color: colors.textColor } }
             }
         }
     });
@@ -126,7 +138,7 @@ function updateCharts(temp, hum) {
     const label = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
     chartData.labels.push(label);
     chartData.temperature.push(parseFloat(temp.toFixed(1)));
-    chartData.humidity.push(parseFloat(hum.toFixed(1)));
+    chartData.humidity.push(parseFloat(hum));
     if (chartData.labels.length > maxDataPoints) {
         chartData.labels.shift();
         chartData.temperature.shift();
@@ -136,42 +148,48 @@ function updateCharts(temp, hum) {
     humChart.update();
 }
 
-// ─── Status Logic ────────────────────────────────────────────────────────────
-function determineStatus(temperature, humidity) {
-    let tempSt = 'aman', humSt = 'aman';
-    if (temperature < THRESHOLDS.temp.minSedang || temperature > THRESHOLDS.temp.maxSedang) tempSt = 'beresiko';
-    else if (temperature < THRESHOLDS.temp.minAman || temperature > THRESHOLDS.temp.maxAman) tempSt = 'sedang';
-    if (humidity < THRESHOLDS.hum.minSedang || humidity > THRESHOLDS.hum.maxSedang) humSt = 'beresiko';
-    else if (humidity < THRESHOLDS.hum.minAman || humidity > THRESHOLDS.hum.maxAman) humSt = 'sedang';
-    if (tempSt === 'beresiko' || humSt === 'beresiko') return 'beresiko';
-    if (tempSt === 'sedang'   || humSt === 'sedang')   return 'sedang';
-    return 'aman';
-}
+// ─── UI Update dari topic RAW ─────────────────────────────────────────────
+// Payload: {"suhu":25.3,"kelembapan":65,"status":"AMAN"}
+function updateUIFromRaw(json) {
+    const suhu       = parseFloat(json.suhu);
+    const kelembapan = parseInt(json.kelembapan);
+    const statusKey  = (json.status || 'MEMBACA').toUpperCase();
 
-// ─── UI Update ───────────────────────────────────────────────────────────────
-function updateUI(temperature, humidity) {
-    tempValueEl.textContent = `${temperature.toFixed(1)} °C`;
-    humValueEl.textContent  = `${humidity.toFixed(1)} %`;
+    if (isNaN(suhu) || isNaN(kelembapan)) return;
 
-    const status = determineStatus(temperature, humidity);
-    statusBadge.className = `status-badge large-badge ${status}`;
-    document.body.classList.remove('offline');
+    // Tampilkan nilai sensor
+    tempValueEl.textContent = `${suhu.toFixed(1)} °C`;
+    humValueEl.textContent  = `${kelembapan} %`;
 
-    const statusMap = {
-        aman:     { text: 'Aman',     desc: 'Kondisi suhu dan kelembapan saat ini berada dalam rentang ideal.' },
-        sedang:   { text: 'Perhatian', desc: 'Kondisi lingkungan kurang optimal. Silakan periksa sirkulasi udara.' },
-        beresiko: { text: 'Beresiko', desc: 'Peringatan! Suhu atau kelembapan di luar batas aman.' },
-    };
-    statusText.textContent        = statusMap[status].text;
-    statusDescription.textContent = statusMap[status].desc;
+    // Update status badge dari nilai yang dikirim ESP32
+    applyStatus(statusKey);
 
-    // Update last received time
+    // Update waktu
     const now = new Date();
     lastUpdateEl.textContent = now.toLocaleTimeString('id-ID');
 
-    updateCharts(temperature, humidity);
+    // Update grafik
+    updateCharts(suhu, kelembapan);
+
+    document.body.classList.remove('offline');
 }
 
+// ─── UI Update dari topic STATUS saja ────────────────────────────────────
+// Payload: {"status":"AMAN"}
+function updateUIFromStatus(json) {
+    const statusKey = (json.status || 'MEMBACA').toUpperCase();
+    applyStatus(statusKey);
+}
+
+// ─── Terapkan status ke badge ─────────────────────────────────────────────
+function applyStatus(statusKey) {
+    const info = STATUS_MAP[statusKey] || STATUS_MAP['MEMBACA'];
+    statusBadge.className     = `status-badge large-badge ${info.cssClass}`;
+    statusText.textContent    = info.text;
+    statusDescription.textContent = info.desc;
+}
+
+// ─── Connection State Helpers ─────────────────────────────────────────────
 function setOfflineState() {
     connStatus.className = 'connection-badge disconnected';
     connText.textContent = 'Terputus';
@@ -192,51 +210,30 @@ function setConnectingState() {
 function setConnectedState() {
     connStatus.className = 'connection-badge connected';
     connText.textContent = 'Terhubung';
-    statusDescription.textContent = 'Terhubung ke HiveMQ. Menunggu data sensor...';
+    if (statusText.textContent === 'Menunggu') {
+        statusDescription.textContent = 'Terhubung ke HiveMQ. Menunggu data sensor (interval 30 detik)...';
+    }
 }
 
-// ─── Parse Payload ────────────────────────────────────────────────────────────
-/**
- * Fungsi ini fleksibel — mendukung berbagai format payload dari ESP32/Arduino:
- *
- * Format 1 (JSON): {"temperature": 25.3, "humidity": 65.1}
- * Format 2 (JSON): {"temp": 25.3, "hum": 65.1}
- * Format 3 (Angka murni untuk topic spesifik): "25.3"
- */
-function parsePayload(topic, rawPayload) {
+// ─── Parse & Dispatch Pesan MQTT ──────────────────────────────────────────
+function handleMessage(topic, rawPayload) {
     const str = rawPayload.toString().trim();
-    const topicLower = topic.toLowerCase();
+    console.log(`[MQTT] ${topic} →`, str);
 
-    // Coba parse JSON dulu
+    let json;
     try {
-        const json = JSON.parse(str);
-        const temp = json.temperature ?? json.temp ?? json.suhu ?? null;
-        const hum  = json.humidity    ?? json.hum  ?? json.kelembapan ?? null;
-
-        if (temp !== null && hum !== null) {
-            updateUI(parseFloat(temp), parseFloat(hum));
-            return;
-        }
-        // JSON ada tapi hanya satu field — gabungkan dengan pending
-        if (temp !== null) pendingTemp = parseFloat(temp);
-        if (hum  !== null) pendingHum  = parseFloat(hum);
-    } catch {
-        // Bukan JSON — angka murni
-        const num = parseFloat(str);
-        if (isNaN(num)) return;
-
-        if (topicLower.includes('temp') || topicLower.includes('suhu')) {
-            pendingTemp = num;
-        } else if (topicLower.includes('hum') || topicLower.includes('kelembapan')) {
-            pendingHum = num;
-        }
+        json = JSON.parse(str);
+    } catch (e) {
+        console.warn('[MQTT] Payload bukan JSON:', str);
+        return;
     }
 
-    // Kalau keduanya sudah ada, update UI
-    if (pendingTemp !== null && pendingHum !== null) {
-        updateUI(pendingTemp, pendingHum);
-        pendingTemp = null;
-        pendingHum  = null;
+    if (topic === MQTT_CONFIG.topics.raw) {
+        // {"suhu":25.3,"kelembapan":65,"status":"AMAN"}
+        updateUIFromRaw(json);
+    } else if (topic === MQTT_CONFIG.topics.status) {
+        // {"status":"AMAN"} — hanya update badge, bukan grafik
+        updateUIFromStatus(json);
     }
 }
 
@@ -250,15 +247,12 @@ function connectMQTT() {
         console.log('[MQTT] Terhubung ke HiveMQ Cloud');
         setConnectedState();
 
-        // Subscribe ke semua topic yang relevan
         const topics = Object.values(MQTT_CONFIG.topics);
         topics.forEach(topic => {
             client.subscribe(topic, { qos: 1 }, (err) => {
                 if (!err) {
-                    console.log(`[MQTT] Subscribe berhasil: ${topic}`);
-                    if (mqttTopicDisplay) {
-                        mqttTopicDisplay.textContent = topics.join(', ');
-                    }
+                    console.log(`[MQTT] Subscribe: ${topic}`);
+                    if (mqttTopicDisplay) mqttTopicDisplay.textContent = topics.join('  ·  ');
                 } else {
                     console.warn(`[MQTT] Gagal subscribe ${topic}:`, err);
                 }
@@ -266,10 +260,7 @@ function connectMQTT() {
         });
     });
 
-    client.on('message', (topic, payload) => {
-        console.log(`[MQTT] Pesan dari "${topic}":`, payload.toString());
-        parsePayload(topic, payload);
-    });
+    client.on('message', handleMessage);
 
     client.on('error', (err) => {
         console.error('[MQTT] Error:', err.message);
@@ -282,7 +273,7 @@ function connectMQTT() {
     });
 
     client.on('reconnect', () => {
-        console.log('[MQTT] Mencoba reconnect...');
+        console.log('[MQTT] Reconnecting...');
         setConnectingState();
     });
 

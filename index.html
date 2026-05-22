@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sensor Dashboard Minimalist</title>
+    <title>Sensor Dashboard — Dev01</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- MQTT.js via CDN -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
@@ -15,7 +14,7 @@
         <header class="header">
             <div class="header-titles">
                 <h1>Monitor Sensor</h1>
-                <p>Data Suhu & Kelembapan Real-time</p>
+                <p>Data Suhu & Kelembapan</p>
             </div>
             <div class="header-controls">
                 <button id="theme-toggle" class="icon-btn" aria-label="Toggle Dark Mode">
@@ -29,7 +28,7 @@
             </div>
         </header>
 
-        <!-- Status Keseluruhan -->
+        <!-- Status Keseluruhan (dari ESP32) -->
         <div class="status-section main-status">
             <div class="status-badge large-badge offline" id="status-badge">
                 <div class="status-dot large-dot"></div>
@@ -47,7 +46,7 @@
                     <h2>Suhu Udara</h2>
                 </div>
                 <div class="value" id="temperature-value">-- °C</div>
-                <div class="card-footer">Sensor DHT22 · via MQTT</div>
+                <div class="card-footer">DHT22 · Terkalibrasi</div>
             </div>
 
             <div class="card hum-card">
@@ -58,17 +57,15 @@
                     <h2>Kelembapan</h2>
                 </div>
                 <div class="value" id="humidity-value">-- %</div>
-                <div class="card-footer">Sensor DHT22 · via MQTT</div>
+                <div class="card-footer">DHT22 · Terkalibrasi</div>
             </div>
         </div>
 
-        <!-- Info Topic MQTT -->
+        <!-- Info MQTT -->
         <div class="mqtt-info" id="mqtt-info">
-            <span class="mqtt-label">Topic:</span>
-            <span id="mqtt-topic-display">sensor/dht22</span>
             <span class="mqtt-sep">·</span>
-            <span class="mqtt-label">Broker:</span>
-            <span>HiveMQ Cloud</span>
+            <span class="mqtt-label">Interval:</span>
+            <span>30 detik</span>
             <span class="mqtt-sep">·</span>
             <span class="mqtt-label">Update terakhir:</span>
             <span id="last-update">-</span>

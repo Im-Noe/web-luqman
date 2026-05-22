@@ -155,3 +155,11 @@ body.offline .status-section {
     .status-badge.large-badge { font-size: 1.5rem; }
     .mqtt-info { font-size: 0.7rem; }
 }
+
+/* Status note (keterangan kecil di bawah badge) */
+.status-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 0.35rem;
+    opacity: 0.75;
+}
